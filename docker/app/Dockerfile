@@ -17,7 +17,7 @@ COPY database/factories database/factories
 COPY database/seeds database/seeds
 RUN composer install --no-dev --no-interaction --prefer-dist --no-scripts --optimize-autoloader
 
-FROM php:8.1-fpm-bookworm
+FROM php:8.3-fpm-bookworm
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends curl libonig-dev libpq-dev libzip-dev unzip \
