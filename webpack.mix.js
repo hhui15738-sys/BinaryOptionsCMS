@@ -99,7 +99,6 @@ mix.then(() => {
 //     });
 //     mix.setResourceRoot("/materialize-material-design-admin-template/laravel/demo/");
 // }
-mix.js('resources/assets/js/scripts.js', 'app').vue().version();
-mix.js('resources/vuejs/app.js', 'app').vue().version();
-mix.js('resources/vuejs/admin.js', 'app').vue().version();
-mix.version();
+mix.js('resources/assets/js/scripts.js', 'app').vue();
+mix.js('resources/vuejs/app.js', 'app').vue();
+mix.js('resources/vuejs/admin.js', 'app').vue();
