@@ -16,6 +16,8 @@ require('dotenv').config();
 const glob = require('glob')
 const path = require('path')
 
+mix.setPublicPath(path.resolve(__dirname, 'public'));
+
 /*
  |--------------------------------------------------------------------------
  | Vendor assets
@@ -92,10 +94,10 @@ mix.then(() => {
 //     mix.version();
 //     mix.webpackConfig({
 //         output: {
-//             publicPath: '/materialize-material-design-admin-template/laravel/demtechnical/'
+//             publicPath: '/materialize-material-design-admin-template/laravel/demo/'
 //         }
 //     });
-//     mix.setResourceRoot("/materialize-material-design-admin-template/laravel/demtechnical/");
+//     mix.setResourceRoot("/materialize-material-design-admin-template/laravel/demo/");
 // }
 mix.js('resources/assets/js/scripts.js', 'public/app').vue().version();
 mix.js('resources/vuejs/app.js', 'public/app').vue().version();
