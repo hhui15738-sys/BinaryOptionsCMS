@@ -8,7 +8,7 @@ COPY resources ./resources
 COPY public ./public
 RUN npm run production \
     && mkdir -p public/app \
-    && cp -a app/. public/app/ \
+    && cp -a /public/app/. public/app/ \
     && test -s public/app/app.js \
     && test -s public/app/admin.js
 
