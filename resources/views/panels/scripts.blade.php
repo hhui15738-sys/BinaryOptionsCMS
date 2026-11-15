@@ -32,9 +32,9 @@
     <!-- END: Page JS-->
     @auth
         @if(isset($is_admin) and $is_admin)
-            <script src="{{ mix('app/admin.js') }}"></script>
+            <script src="{{ asset('app/admin.js') }}"></script>
         @else
-            <script src="{{ mix('app/app.js') }}"></script>
+            <script src="{{ asset('app/app.js') }}"></script>
         @endif
     @endauth
     @include('panels.counter')
