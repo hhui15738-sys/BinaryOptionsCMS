@@ -8,7 +8,7 @@ jobs:
   static-checks:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Validate Docker Compose
         run: |
@@ -16,22 +16,15 @@ jobs:
           sed -i "s|^APP_KEY=.*|APP_KEY=base64:$(openssl rand -base64 32)|" .env
           docker compose config --quiet
 
-      - name: Resolve Laravel 12 dependencies
+      - name: Install locked PHP dependencies
         run: |
           docker run --rm -v "$PWD:/app" -w /app composer:2.8 \
-            update --with-all-dependencies --no-interaction --no-scripts --prefer-dist
+            install --no-interaction --no-scripts --prefer-dist
 
       - name: Audit PHP dependencies
-        continue-on-error: true
         run: |
           docker run --rm -v "$PWD:/app" -w /app composer:2.8 \
             audit --no-dev
-
-      - name: Upload upgraded PHP dependency lock
-        uses: actions/upload-artifact@v4
-        with:
-          name: composer-lock-laravel-12
-          path: composer.lock
 
       - name: Build application images
         run: |
