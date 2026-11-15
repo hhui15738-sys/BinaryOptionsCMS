@@ -19,6 +19,48 @@ The system was designed around several high-value product requirements:
 - enforce verification, turnover and anti-fraud constraints before withdrawals;
 - give administrators operational controls over symbols, users, balances, payouts, KYC, tournaments and payment systems.
 
+## Quick Start With Docker
+
+Requirements: Docker Engine with Docker Compose v2 and OpenSSL.
+
+```bash
+cp .env.docker.example .env
+```
+
+Edit `.env` and replace every `change-this-*` value. Generate and set `APP_KEY` with:
+
+```bash
+printf 'APP_KEY=base64:%s\n' "$(openssl rand -base64 32)"
+```
+
+Start the application and its PostgreSQL, MySQL, ClickHouse and Redis services:
+
+```bash
+docker compose up -d --build
+docker compose ps
+docker compose logs -f app
+```
+
+The default stack also starts Laravel Echo Server on `127.0.0.1:6001` for private balance and order updates.
+
+Open `http://127.0.0.1:8080` and sign in with `ADMIN_EMAIL` and `ADMIN_PASSWORD` from `.env`. The app container applies migrations and creates the initial administrator and starter records on its first boot. Repeated starts preserve existing data.
+
+The external market-data parser is intentionally opt-in because it requires valid TradingView credentials:
+
+```bash
+docker compose --profile market-data up -d quotes-parser
+```
+
+To stop the stack without deleting database data:
+
+```bash
+docker compose down
+```
+
+Named volumes hold persistent data. Use `docker compose down -v` only when you explicitly want to erase the local databases and uploaded files.
+
+The codebase is currently tied to Laravel 8 and its historical dependency set. The image pins Composer 2.8 so that the legacy dependency graph remains reproducible; framework and frontend dependency modernization should be handled as a separate upgrade before an internet-facing production deployment.
+
 ## Product Surface
 
 | Area | Capabilities |

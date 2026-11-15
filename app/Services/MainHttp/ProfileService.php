@@ -27,6 +27,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
 use Twilio\Exceptions\ConfigurationException;
 use Twilio\Rest\Client;
 
@@ -275,10 +276,16 @@ class ProfileService
         }
         try {
             $path = Helper::createPathForVerifyPhotos();
-            $fileName = time() . '_' . $request->file->getClientOriginalName();
-            $filePath = 'storage/app/'.$request->file('file')->storeAs($path, $fileName);
+            $uploadedFile = $request->file('file');
+            $extensions = [
+                'image/jpeg' => 'jpg',
+                'image/png' => 'png',
+                'image/webp' => 'webp',
+            ];
+            $fileName = Str::uuid().'.'.$extensions[$uploadedFile->getMimeType()];
+            $filePath = 'storage/app/'.$uploadedFile->storeAs($path, $fileName, 'local');
             $model = new File();
-            $model->user_id = Auth::user()->id;
+            $model->user_id = $id;
             $model->path = $filePath;
             $model->save();
             Profile::where('user_id', $id)->update([$pages[$request->page] => $model->id]);

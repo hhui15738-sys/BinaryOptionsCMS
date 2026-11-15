@@ -32,7 +32,6 @@ Route::post('/cryptonator/process', 'Main\DepositController@cryptonatorProcess')
 Route::post('/event-twilio', 'Main\ProfileController@phoneEvent');
 Route::get('/mp3', 'Main\ProfileController@playMP3');
 Route::get('/offer/{code}', 'Main\ReferralController@setReferralCookie');
-Route::get('/test', 'Main\TestController@test');
 Route::post('/payeer/status', 'Main\DepositController@processPayeer');
 Route::post('/freekassa/process', 'Main\DepositController@processFreeKassa');
 

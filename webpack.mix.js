@@ -16,6 +16,8 @@ require('dotenv').config();
 const glob = require('glob')
 const path = require('path')
 
+mix.setPublicPath(path.resolve(__dirname, 'public'));
+
 /*
  |--------------------------------------------------------------------------
  | Vendor assets
@@ -25,7 +27,7 @@ const path = require('path')
 function mixAssetsDir(query, cb) {
     (glob.sync('resources/' + query) || []).forEach(f => {
         f = f.replace(/[\\\/]+/g, '/');
-        cb(f, f.replace('resources', 'public'));
+        cb(f, f.replace(/^resources[\\/]/, ''));
     });
 }
 
@@ -64,16 +66,16 @@ mixAssetsDir('assets/js/**/*.js', (src, dest) => mix.scripts(src, dest));
  |--------------------------------------------------------------------------
  */
 
-mix.copyDirectory('resources/images', 'public/images');
-mix.copyDirectory('resources/vendors', 'public/vendors');
-mix.copyDirectory('resources/fonts', 'public/fonts');
-mix.copyDirectory('resources/data', 'public/data');
+mix.copyDirectory('resources/images', 'images');
+mix.copyDirectory('resources/vendors', 'vendors');
+mix.copyDirectory('resources/fonts', 'fonts');
+mix.copyDirectory('resources/data', 'data');
 
-mix.sass('resources/sass/bootstrap-extended.scss', 'public/css')
-    .sass('resources/sass/bootstrap.scss', 'public/css')
-    .sass('resources/sass/colors.scss', 'public/css')
-    .sass('resources/sass/components.scss', 'public/css')
-    .sass('resources/sass/custom-rtl.scss', 'public/css')
+mix.sass('resources/sass/bootstrap-extended.scss', 'css')
+    .sass('resources/sass/bootstrap.scss', 'css')
+    .sass('resources/sass/colors.scss', 'css')
+    .sass('resources/sass/components.scss', 'css')
+    .sass('resources/sass/custom-rtl.scss', 'css')
 
 // mix.copy('resources/js/vendors.min.js', 'public/js/vendors.min.js');
 
@@ -92,12 +94,11 @@ mix.then(() => {
 //     mix.version();
 //     mix.webpackConfig({
 //         output: {
-//             publicPath: '/materialize-material-design-admin-template/laravel/demtechnical/'
+//             publicPath: '/materialize-material-design-admin-template/laravel/demo/'
 //         }
 //     });
-//     mix.setResourceRoot("/materialize-material-design-admin-template/laravel/demtechnical/");
+//     mix.setResourceRoot("/materialize-material-design-admin-template/laravel/demo/");
 // }
-mix.js('resources/assets/js/scripts.js', 'public/app').vue().version();
-mix.js('resources/vuejs/app.js', 'public/app').vue().version();
-mix.js('resources/vuejs/admin.js', 'public/app').vue().version();
-mix.version();
+mix.js('resources/assets/js/scripts.js', 'app').vue();
+mix.js('resources/vuejs/app.js', 'app').vue();
+mix.js('resources/vuejs/admin.js', 'app').vue();

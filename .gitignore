@@ -1,4 +1,6 @@
 node_modules
+app/Services/cookie.txt
+app/Services/Console/cookie.txt
 public/hot
 public/storage
 public/assets
@@ -21,15 +23,17 @@ laravel-echo-server.lock
 app/Http/Controllers/Main/cookie.txt
 .env
 laravel-echo-server.json
+!/docker/echo/laravel-echo-server.json
 app/Console/Commands/cookie.txt
 *.lock
+!/composer.lock
 public/js/
 public/app/
 public/assets/
 public/app/admin.js
 public/mix-manifest.json
 package-lock.json
-/docker/*
+/docker/nginx/logs/*
 /env-ci/**/nginx/certs/*
 /env-ci/**/nginx/logs/*
 

@@ -48,25 +48,37 @@ class WithdrawalService
             $admin = true;
         }
         $id = $admin ? $request->id : Auth::user()->id;
-        $user = $admin ? User::where('id', $id)->first() : Auth::user();
-        if($user->balance < $request->amount){
-            return (['success' => false, 'message' => __('locale.withdraw_not_enough_money')]);
+        $result = DB::transaction(function () use ($id, $request) {
+            $user = User::whereKey($id)->lockForUpdate()->firstOrFail();
+            if ($user->balance < $request->amount) {
+                return ['error' => __('locale.withdraw_not_enough_money')];
+            }
+            if ($user->left_turnover > 0) {
+                return ['error' => __('locale.withdraw_before')];
+            }
+            $profile = Profile::where('user_id', $user->id)->first();
+            if (!$profile || !$profile->user_verify_at) {
+                return ['error' => __('locale.withdraw_verify')];
+            }
+
+            $model = new Withdrawal();
+            $model->user_id = $user->id;
+            $model->status = 0;
+            $model->system_id = $request->system_id;
+            $model->address = $request->address;
+            $model->amount = $request->amount;
+            $model->save();
+
+            $user->decrement('balance', $request->amount);
+            $user->refresh();
+            return ['user' => $user];
+        }, 3);
+
+        if (isset($result['error'])) {
+            return ['success' => false, 'message' => $result['error']];
         }
-        if($user->left_turnover > 0){
-            return (['success' => false, 'message' => __('locale.withdraw_before')]);
-        }
-        if(!Profile::where('user_id', $user->id)->first()->user_verify_at){
-            return (['success' => false, 'message' => __('locale.withdraw_verify')]);
-        }
-        $model = new Withdrawal();
-        $model->user_id = $user->id;
-        $model->status = 0;
-        $model->system_id = $request->system_id;
-        $model->address = $request->address;
-        $model->amount = $request->amount;
-        $model->save();
-        User::where('id', $user->id)->update(['balance' => DB::raw("balance-$request->amount")]);
-        broadcast(new ChangeBalance($user->balance-$request->amount, $user));
+
+        broadcast(new ChangeBalance($result['user']->balance, $result['user']));
         return (['success' => true, 'message' => __('locale.withdraw_success')]);
     }
 

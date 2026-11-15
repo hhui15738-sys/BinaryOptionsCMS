@@ -11,6 +11,6 @@ class Promocode extends Model
 
     public function getDescriptionAttribute($value)
     {
-        return unserialize($value);
+        return unserialize($value, ['allowed_classes' => false]);
     }
 }

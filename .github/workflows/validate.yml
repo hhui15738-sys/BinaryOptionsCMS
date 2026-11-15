@@ -1,0 +1,41 @@
+name: Validate
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  static-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate Docker Compose
+        run: |
+          cp .env.docker.example .env
+          sed -i "s|^APP_KEY=.*|APP_KEY=base64:$(openssl rand -base64 32)|" .env
+          docker compose config --quiet
+
+      - name: Install locked PHP dependencies
+        run: |
+          docker run --rm -v "$PWD:/app" -w /app composer:2.8 \
+            install --no-dev --no-interaction --no-scripts --prefer-dist
+
+      - name: Audit PHP dependencies
+        continue-on-error: true
+        run: |
+          docker run --rm -v "$PWD:/app" -w /app composer:2.8 \
+            audit --no-dev
+
+      - name: Build application images
+        run: |
+          docker compose build app echo
+
+      - name: Check PHP syntax
+        run: |
+          docker compose run --rm --no-deps -e RUN_BOOTSTRAP=false app sh -lc \
+            "find app bootstrap config database routes tests -name '*.php' -print0 | xargs -0 -n1 php -l"
+
+      - name: Build frontend assets
+        run: |
+          docker build --target frontend -f docker/app/Dockerfile .

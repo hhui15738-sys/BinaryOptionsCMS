@@ -12,8 +12,18 @@ class PassportFirstPageRequest extends FormRequest
     {
         return [
             'id' => [new IdIfAdminRule],
-            'page' => 'required|min:1|max:3',
-            'file' => 'required|image|max:4096'
+            'page' => ['required', 'integer', 'in:1,2,3'],
+            'file' => [
+                'required',
+                'file',
+                'max:4096',
+                'mimetypes:image/jpeg,image/png,image/webp',
+                function ($attribute, $value, $fail) {
+                    if (!$value->isValid() || @getimagesize($value->getRealPath()) === false) {
+                        $fail('The uploaded document must be a valid image.');
+                    }
+                },
+            ],
         ];
     }
 }
