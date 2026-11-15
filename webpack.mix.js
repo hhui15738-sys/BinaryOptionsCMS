@@ -88,9 +88,9 @@ mix.sass('resources/sass/bootstrap-extended.scss', 'css')
 //     });
 //     mix.setResourceRoot("/materialize-material-design-admin-template/laravel/demo/");
 // }
-mix.js('resources/assets/js/scripts.js', 'public/app').vue();
-mix.js('resources/vuejs/app.js', 'public/app').vue();
-mix.js('resources/vuejs/admin.js', 'public/app').vue();
+mix.js('resources/assets/js/scripts.js', 'app').vue();
+mix.js('resources/vuejs/app.js', 'app').vue();
+mix.js('resources/vuejs/admin.js', 'app').vue();
 
 mix.then(() => {
     if (process.env.MIX_CONTENT_DIRECTION === "rtl") {

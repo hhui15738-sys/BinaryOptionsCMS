@@ -7,6 +7,8 @@ COPY webpack.mix.js ./
 COPY resources ./resources
 COPY public ./public
 RUN npm run production \
+    && mkdir -p public/app \
+    && cp -a app/. public/app/ \
     && test -s public/app/app.js \
     && test -s public/app/admin.js
 
