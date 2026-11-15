@@ -26,6 +26,7 @@ laravel-echo-server.json
 !/docker/echo/laravel-echo-server.json
 app/Console/Commands/cookie.txt
 *.lock
+!/composer.lock
 public/js/
 public/app/
 public/assets/

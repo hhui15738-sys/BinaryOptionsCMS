@@ -11,7 +11,7 @@ RUN npm run production
 FROM composer:2.8 AS vendor
 
 WORKDIR /app
-COPY composer.json ./
+COPY composer.json composer.lock ./
 COPY app/Helpers/Helper.php app/Helpers/Helper.php
 COPY database/factories database/factories
 COPY database/seeds database/seeds
