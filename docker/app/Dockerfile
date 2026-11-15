@@ -8,7 +8,7 @@ COPY resources ./resources
 COPY public ./public
 RUN npm run production
 
-FROM composer:2 AS vendor
+FROM composer:2.8 AS vendor
 
 WORKDIR /app
 COPY composer.json ./

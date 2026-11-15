@@ -59,6 +59,8 @@ docker compose down
 
 Named volumes hold persistent data. Use `docker compose down -v` only when you explicitly want to erase the local databases and uploaded files.
 
+The codebase is currently tied to Laravel 8 and its historical dependency set. The image pins Composer 2.8 so that the legacy dependency graph remains reproducible; framework and frontend dependency modernization should be handled as a separate upgrade before an internet-facing production deployment.
+
 ## Product Surface
 
 | Area | Capabilities |
