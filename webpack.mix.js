@@ -16,7 +16,7 @@ require('dotenv').config();
 const glob = require('glob')
 const path = require('path')
 
-mix.setPublicPath(path.resolve(__dirname, 'public'));
+mix.setPublicPath('public');
 
 /*
  |--------------------------------------------------------------------------
