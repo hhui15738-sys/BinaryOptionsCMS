@@ -8,11 +8,11 @@
                 </button>
             </div>
             <div class="modal-body">
-                {!! htmlFormSnippet([
-                    "callback" => "callbackFunction",
-                    "expired-callback" => "expiredCallbackFunction",
-                    "error-callback" => "errorCallbackFunction",
-                ]) !!}
+                <div class="g-recaptcha"
+                     data-sitekey="{{ config('recaptcha.api_site_key') }}"
+                     data-callback="callbackFunction"
+                     data-expired-callback="expiredCallbackFunction"
+                     data-error-callback="errorCallbackFunction"></div>
 
             </div>
             <div class="modal-footer">
@@ -30,7 +30,7 @@
         margin-right: auto !important;
     }
 </style>
-{!! htmlScriptTagJsApi() !!}
+<script src="https://www.google.com/recaptcha/api.js" async defer></script>
 <script src="{{ asset('vendors/js/jquery.min.js') }}"></script>
 <script type="text/javascript">
     function callbackFunction() {

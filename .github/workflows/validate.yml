@@ -42,6 +42,10 @@ jobs:
           docker compose run --rm --no-deps -e RUN_BOOTSTRAP=false app sh -lc \
             "find app bootstrap config database routes tests -name '*.php' -print0 | xargs -0 -n1 php -l"
 
+      - name: Boot Laravel application
+        run: |
+          docker compose run --rm --no-deps -e RUN_BOOTSTRAP=false app php artisan about
+
       - name: Build frontend assets
         run: |
           docker build --target frontend -f docker/app/Dockerfile .
