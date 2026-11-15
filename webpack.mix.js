@@ -73,7 +73,7 @@ mix.copyDirectory('resources/data', 'data');
 
 mix.sass('resources/sass/bootstrap-extended.scss', 'css')
     .sass('resources/sass/bootstrap.scss', 'css')
-    .sass('resources/sass/colors.scss', 'csss')
+    .sass('resources/sass/colors.scss', 'css')
     .sass('resources/sass/components.scss', 'css')
     .sass('resources/sass/custom-rtl.scss', 'css')
 
@@ -82,9 +82,9 @@ mix.sass('resources/sass/bootstrap-extended.scss', 'css')
 // if (mix.inProduction()) {
 //     mix.version();
 //     mix.webpackConfig({
-//        output: {
-//            publicPath: '/materialize-material-design-admin-template/laravel/demo/'
-//        }
+//         output: {
+//             publicPath: '/materialize-material-design-admin-template/laravel/demo/'
+//         }
 //     });
 //     mix.setResourceRoot("/materialize-material-design-admin-template/laravel/demo/");
 // }
@@ -94,7 +94,7 @@ mix.js('resources/vuejs/admin.js', 'app').vue();
 
 mix.then(() => {
     if (process.env.MIX_CONTENT_DIRECTION === "rtl") {
-        let command = `node ${path.resolve('node_modules/rtlcss/bin/rtlcss.js')} -d -e ".css" ./public/css/ ./public/css/ ;
+        let command = `node ${path.resolve('node_modules/rtlcss/bin/rtlcss.js')} -d -e ".css" ./public/css/ ./public/css/`;
         exec(command, function (err) {
             if (err !== null) {
                 console.log(err);
