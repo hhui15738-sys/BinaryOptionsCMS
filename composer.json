@@ -18,7 +18,7 @@
         "guzzlehttp/guzzle": "^7.0.1",
         "ixudra/curl": "^6.21",
         "laravel/framework": "^12.71",
-        "laravel/passport": "^13.11",
+        "laravel/passport": "dev-13.x#aa6d8376c1565e38bfeee0bdba671f5363b5eae6",
         "laravel/socialite": "^5.0",
         "laravel/tinker": "^2.10",
         "predis/predis": "^1.1",
