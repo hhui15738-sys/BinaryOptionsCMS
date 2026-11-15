@@ -1,4 +1,6 @@
 node_modules
+app/Services/cookie.txt
+app/Services/Console/cookie.txt
 public/hot
 public/storage
 public/assets

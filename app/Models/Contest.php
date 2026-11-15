@@ -18,16 +18,16 @@ class Contest extends Model
 
   public function getTitleAttribute($value)
   {
-    return unserialize($value);
+    return unserialize($value, ['allowed_classes' => false]);
   }
 
   public function getDescriptionAttribute($value)
   {
-    return unserialize($value);
+    return unserialize($value, ['allowed_classes' => false]);
   }
 
   public function getPlacesAttribute($value)
   {
-    return unserialize($value);
+    return unserialize($value, ['allowed_classes' => false]);
   }
 }

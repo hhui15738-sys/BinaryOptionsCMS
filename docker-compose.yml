@@ -5,7 +5,7 @@ services:
     restart: always
     tty: true
     ports:
-      - 8123:8123
+      - 127.0.0.1:8123:8123
     volumes:
       - ./docker/clickhouse/config.xml:/etc/clickhouse-server/config.xml
       - ./docker/clickhouse/users.xml:/etc/clickhouse-server/users.xml
@@ -71,7 +71,7 @@ services:
     restart: unless-stopped
     tty: true
     ports:
-      - 443:443
+      - 127.0.0.1:8443:443
     volumes:
       - .:/var/www
       - ./docker/nginx/certs:/var/certs
@@ -83,9 +83,9 @@ services:
     container_name: binaries-phpmyadmin
     restart: always
     ports:
-      - 9090:80
+      - 127.0.0.1:9090:80
     environment:
-      - PMA_ARBITRARY=1
+      - PMA_HOST=mysql
 
   pgadmin:
     image: dpage/pgadmin4:5.6
@@ -95,7 +95,7 @@ services:
       PGADMIN_DEFAULT_EMAIL: info@binaries.site
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:?Set PGADMIN_DEFAULT_PASSWORD}
     ports:
-      - 5050:80
+      - 127.0.0.1:5050:80
     volumes:
       - ./docker/pgadmin:/var/lib/pgadmin
 
@@ -109,7 +109,7 @@ services:
     container_name: binaries-postgres
     restart: always
     ports:
-      - 5432:5432
+      - 127.0.0.1:5432:5432
     environment:
       POSTGRES_USER: binaries
       POSTGRES_PASSWORD: ${PG_DB_PASSWORD:?Set PG_DB_PASSWORD}
@@ -123,7 +123,7 @@ services:
     command: --default-authentication-plugin=mysql_native_password
     restart: always
     ports:
-      - 3306:3306
+      - 127.0.0.1:3306:3306
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Set MYSQL_ROOT_PASSWORD}
       MYSQL_USER: binaries
@@ -146,12 +146,12 @@ services:
       ECHO_SSL_CERT_PATH: /var/certs/localhost-cert.pem
       ECHO_SSL_KEY_PATH: /var/certs/localhost-key.pem
       ECHO_ALLOW_CORS: "true"
-      ECHO_DEVMODE: "true"
-      ECHO_ALLOW_ORIGIN: https://binaries.site
+      ECHO_DEVMODE: "false"
+      ECHO_ALLOW_ORIGIN: https://127.0.0.1:8443
       ECHO_ALLOW_METHODS: "GET, POST"
       ECHO_ALLOW_HEADERS: "Origin, Content-Type, X-Auth-Token, X-Requested-With, Accept, Authorization, X-CSRF-TOKEN, X-Socket-Id"
     ports:
-      - 6001:6001
+      - 127.0.0.1:6001:6001
     volumes:
       - ./docker/nginx/certs:/var/certs
 
@@ -160,7 +160,7 @@ services:
     container_name: roundcube
     restart: always
     ports:
-      - 8855:80
+      - 127.0.0.1:8855:80
     environment:
       ROUNDCUBEMAIL_DB_TYPE: sqlite
       ROUNDCUBEMAIL_DEFAULT_HOST: ${MAIL_HOST}

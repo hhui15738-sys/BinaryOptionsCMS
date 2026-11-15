@@ -58,7 +58,7 @@ services:
     restart: unless-stopped
     tty: true
     ports:
-      - 443:443
+      - 127.0.0.1:8443:443
     volumes:
       - .:/var/www
       - ./docker/nginx/certs:/var/certs
@@ -70,9 +70,9 @@ services:
     container_name: binaries-phpmyadmin
     restart: always
     ports:
-      - 9090:80
+      - 127.0.0.1:9090:80
     environment:
-      - PMA_ARBITRARY=1
+      - PMA_HOST=mysql
 
   pgadmin:
     image: dpage/pgadmin4:5.6
@@ -82,7 +82,7 @@ services:
       PGADMIN_DEFAULT_EMAIL: info@binaries.website
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:?Set PGADMIN_DEFAULT_PASSWORD}
     ports:
-      - 5050:80
+      - 127.0.0.1:5050:80
     volumes:
       - ./docker/pgadmin:/var/lib/pgadmin
 
@@ -129,11 +129,11 @@ services:
       ECHO_SSL_CERT_PATH: /var/certs/domain.crt
       ECHO_SSL_KEY_PATH: /var/certs/domain.key
       ECHO_ALLOW_CORS: "true"
-      ECHO_ALLOW_ORIGIN: https://binaries.website
+      ECHO_ALLOW_ORIGIN: https://127.0.0.1:8443
       ECHO_ALLOW_METHODS: "GET, POST"
       ECHO_ALLOW_HEADERS: "Origin, Content-Type, X-Auth-Token, X-Requested-With, Accept, Authorization, X-CSRF-TOKEN, X-Socket-Id"
     ports:
-      - 6001:6001
+      - 127.0.0.1:6001:6001
     volumes:
       - ./docker/nginx/certs:/var/certs
 
@@ -142,7 +142,7 @@ services:
     container_name: roundcube
     restart: always
     ports:
-      - 8855:80
+      - 127.0.0.1:8855:80
     environment:
       ROUNDCUBEMAIL_DB_TYPE: sqlite
       ROUNDCUBEMAIL_DEFAULT_HOST: mail.binaries.website

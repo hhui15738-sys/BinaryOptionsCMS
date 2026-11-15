@@ -41,7 +41,11 @@ class DepositService
         );
         if($check){
             $orderId = $request['bill']['customFields']['orderId'];
-            $this->processDepositServ($orderId);
+            $this->processDepositServ(
+                $orderId,
+                $request['bill']['amount']['value'] ?? null,
+                $request['bill']['amount']['currency'] ?? null
+            );
             return null;
         } else {
             return 'Invalid cipher';
@@ -52,8 +56,8 @@ class DepositService
         $arr = null;
         parse_str($request->getContent(), $arr);
         $sha1 = sha1($arr['notification_type'].'&'.$arr['operation_id'].'&'.$arr['amount'].'&'.$arr['currency'].'&'.$arr['datetime'].'&'.$arr['sender'].'&'.$arr['codepro'].'&'.config('deposit.yoomoney_secret').'&'.$arr['label']);
-        if($sha1 == $arr['sha1_hash'] and $arr['codepro'] == 'false' and $arr['unaccepted'] == 'false'){
-            $this->processDepositServ($arr['label']);
+        if(hash_equals($sha1, (string) $arr['sha1_hash']) and $arr['codepro'] == 'false' and $arr['unaccepted'] == 'false'){
+            $this->processDepositServ($arr['label'], $arr['amount'] ?? null, $arr['currency'] ?? 'RUB');
             return true;
         } else {
             return 'Invalid cipher';
@@ -65,7 +69,11 @@ class DepositService
         $array = null;
         parse_str($request->getContent(), $array);
         if($cryptonator->checkAnswer($array)){
-            $this->processDepositServ($array['order_id']);
+            $this->processDepositServ(
+                $array['order_id'],
+                $array['invoice_amount'] ?? null,
+                $array['invoice_currency'] ?? null
+            );
         } else {
             return 'Invalid cipher';
         }
@@ -216,9 +224,9 @@ class DepositService
             }
             $arHash[] = $m_key;
             $sign_hash = strtoupper(hash('sha256', implode(':', $arHash)));
-            if ($request->m_sign == $sign_hash && $request->m_status == 'success') {
+            if (hash_equals($sign_hash, (string) $request->m_sign) && $request->m_status == 'success') {
                 ob_end_clean();
-                if($this->processDepositServ($request->m_orderid)){
+                if($this->processDepositServ($request->m_orderid, $request->m_amount, $request->m_curr)){
                     return $request->m_orderid.'|success';
                 } else {
                     return $request->m_orderid.'|error';
@@ -232,8 +240,8 @@ class DepositService
     public function processFreeKassa(Request $request){
         if (!in_array($request->ip(), array('136.243.38.147', '136.243.38.149', '136.243.38.150', '136.243.38.151', '136.243.38.189', '136.243.38.108'))) return;
         $sign = md5(config('deposit.free_kassa_id').':'.$request->AMOUNT.':'.config('deposit.free_kassa_secret_2').':'.$request->MERCHANT_ORDER_ID);
-        if($sign == $request->SIGN){
-            $this->processDepositServ($request->MERCHANT_ORDER_ID);
+        if(hash_equals($sign, (string) $request->SIGN)){
+            $this->processDepositServ($request->MERCHANT_ORDER_ID, $request->AMOUNT, 'USD');
             return 'YES';
         } else {
             return 'wrong sign';
@@ -250,37 +258,64 @@ class DepositService
         return Datatables::of($history)->make();
     }
 
-    public function processDepositServ($orderId){
-        $deposit = Deposit::where('id', $orderId)->where('status', 0)->first();
-        if($deposit){
-            Deposit::where('id', $orderId)->where('status', 0)->update(['status' => 1]);
-            $user = User::where('id', $deposit->user_id)->first();
-            if($deposit->promocode_id){
-                $promocode = Promocode::where('id', $deposit->promocode_id)->first();
-                $bonus_amount = ($deposit->amount * $promocode->bonus_size / 100);
-                $amount_with_promocode = $deposit->amount + $bonus_amount;
-                $turnover = $bonus_amount * $promocode->turnover;
-                User::where('id', $deposit->user_id)->update([
-                    'balance' => DB::raw("balance+$amount_with_promocode"),
-                    'bonus' => DB::raw("bonus+$bonus_amount"),
-                    'all_turnover' => DB::raw("all_turnover+$turnover"),
-                    'left_turnover' => DB::raw("left_turnover+$turnover"),
-                ]);
-                broadcast(new ChangeBalance($user->balance+$amount_with_promocode, Auth::user()));
-            } else {
-                User::where('id', $deposit->user_id)->update(['balance' => DB::raw("balance+$deposit->amount")]);
-                broadcast(new ChangeBalance($user->balance+$deposit->amount, Auth::user()));
+    public function processDepositServ($orderId, $paidAmount = null, $currency = null){
+        $creditedUser = DB::transaction(function () use ($orderId, $paidAmount, $currency) {
+            $deposit = Deposit::whereKey($orderId)->lockForUpdate()->first();
+            if (!$deposit || (int) $deposit->status !== 0) {
+                return null;
             }
-            if($user->referer_id) {
-                if(User::where('id', $user->referer_id)->first()->partner_status){
-                    $amount_percent = $deposit->amount * 0.1;
-                    User::where('id', $user->referer_id)->update(['balance' => DB::raw("balance+$amount_percent")]);
+
+            if ($paidAmount !== null) {
+                $expectedAmount = strtoupper((string) $currency) === 'RUB'
+                    ? $deposit->amount_in_rub
+                    : $deposit->amount;
+                if (abs((float) $paidAmount - (float) $expectedAmount) > 0.01) {
+                    Log::warning('Rejected deposit callback with mismatched amount', [
+                        'deposit_id' => $deposit->id,
+                        'paid_amount' => $paidAmount,
+                        'expected_amount' => $expectedAmount,
+                        'currency' => $currency,
+                    ]);
+                    return null;
                 }
-                Referral::where('user_id', $user->referer_id)->update(['deposit_count' => DB::raw("deposit_count+$deposit->amount")]);
             }
-            return true;
-        } else {
+
+            $user = User::whereKey($deposit->user_id)->lockForUpdate()->firstOrFail();
+            $creditAmount = (float) $deposit->amount;
+            if ($deposit->promocode_id) {
+                $promocode = Promocode::whereKey($deposit->promocode_id)->first();
+                if ($promocode) {
+                    $bonusAmount = $creditAmount * (float) $promocode->bonus_size / 100;
+                    $turnover = $bonusAmount * (float) $promocode->turnover;
+                    $creditAmount += $bonusAmount;
+                    $user->bonus += $bonusAmount;
+                    $user->all_turnover += $turnover;
+                    $user->left_turnover += $turnover;
+                }
+            }
+
+            $user->balance += $creditAmount;
+            $user->save();
+            $deposit->status = 1;
+            $deposit->save();
+
+            if ($user->referer_id) {
+                $referer = User::whereKey($user->referer_id)->lockForUpdate()->first();
+                if ($referer && $referer->partner_status) {
+                    $referer->increment('balance', (float) $deposit->amount * 0.1);
+                }
+                Referral::where('user_id', $user->referer_id)
+                    ->increment('deposit_count', (float) $deposit->amount);
+            }
+
+            return $user;
+        }, 3);
+
+        if (!$creditedUser) {
             return false;
         }
+
+        broadcast(new ChangeBalance($creditedUser->balance, $creditedUser));
+        return true;
     }
 }

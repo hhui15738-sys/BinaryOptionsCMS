@@ -43,10 +43,10 @@ class TradingService
                 $ch = curl_init();
                 curl_setopt($ch, CURLOPT_URL, "https://www.tradingview.com/quote_token/");
                 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-                curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+                curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
                 curl_setopt($ch, CURLOPT_COOKIEFILE, __DIR__ . '/cookie.txt');
                 curl_setopt($ch, CURLOPT_COOKIEJAR, __DIR__ . '/cookie.txt');
-                curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+                curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
                 curl_setopt($ch, CURLOPT_ENCODING, "gzip");
                 $auth_token = curl_exec($ch);
                 $auth_token = ltrim($auth_token, '"');
@@ -73,10 +73,10 @@ class TradingService
                 curl_setopt($ch, CURLOPT_POST, true);
                 curl_setopt($ch, CURLOPT_URL, "https://www.tradingview.com/accounts/signin/");
                 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-                curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+                curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
                 curl_setopt($ch, CURLOPT_COOKIEFILE, __DIR__ . '/cookie.txt');
                 curl_setopt($ch, CURLOPT_COOKIEJAR, __DIR__ . '/cookie.txt');
-                curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+                curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
                 curl_setopt($ch, CURLOPT_HTTPHEADER, $request_headers);
                 curl_setopt($ch, CURLOPT_ENCODING, "gzip");
                 curl_setopt($ch, CURLOPT_POSTFIELDS, "feature_source=Header&username=$login&password=$password&remember=on");
@@ -163,39 +163,62 @@ class TradingService
             if (OpenOrders::where('user_id', Auth::user()->id)->where('symbol_id', $request->symbol)->where('type', '<>', $request->direction)->count()) {
                 $hedge = 1;
             }
-            if ($request->type == 'real') { // Если реальный счет
-                $model = new OpenOrders();
-                User::where('id', Auth::user()->id)->update(['balance' => DB::raw('balance-' . $request->amount)]);
-                broadcast(new ChangeBalance(Auth::user()->balance - $request->amount, Auth::user()));
-            } elseif ($request->type == 'demo') {
-                $model = new OpenDemoOrders();
-                User::where('id', Auth::user()->id)->update(['demo_balance' => DB::raw('demo_balance-' . $request->amount)]);
-                broadcast(new ChangeDemoBalance(Auth::user()->demo_balance - $request->amount, Auth::user()));
-            } elseif ($request->type == 'tournament') {
-                $model = new ContestOpenOrder();
-                $model->contest_id = $request->id;
-                ContestUser::where('user_id', Auth::user()->id)->where('contest_id', $request->id)->update([
-                    'balance' => DB::raw('balance-' . $request->amount)
-                ]);
-                $user_contest = ContestUser::where('user_id', Auth::user()->id)->where('contest_id', $request->id)->first();
-                broadcast(new ChangeContestBalance($user_contest->balance, $user_contest, $request->id));
+            $balanceOwner = null;
+            $model = DB::transaction(function () use ($request, $price, $hedge, $symbol, $seconds, &$balanceOwner) {
+                if ($request->type === 'real' || $request->type === 'demo') {
+                    $balanceOwner = User::whereKey(Auth::id())->lockForUpdate()->firstOrFail();
+                    $balanceColumn = $request->type === 'real' ? 'balance' : 'demo_balance';
+                    if ($balanceOwner->{$balanceColumn} < $request->amount) {
+                        return null;
+                    }
+                    $balanceOwner->decrement($balanceColumn, $request->amount);
+                    $balanceOwner->refresh();
+                    $model = $request->type === 'real' ? new OpenOrders() : new OpenDemoOrders();
+                } else {
+                    $balanceOwner = ContestUser::where('user_id', Auth::id())
+                        ->where('contest_id', $request->id)
+                        ->lockForUpdate()
+                        ->firstOrFail();
+                    if ($balanceOwner->balance < $request->amount) {
+                        return null;
+                    }
+                    $balanceOwner->decrement('balance', $request->amount);
+                    $balanceOwner->refresh();
+                    $model = new ContestOpenOrder();
+                    $model->contest_id = $request->id;
+                }
+
+                $model->symbol_id = $request->symbol;
+                $model->user_id = Auth::id();
+                $model->type = $request->direction;
+                $model->open_price = $price;
+                $model->hedging = $hedge;
+                $model->percent = $symbol->percent;
+                $model->close_at = Carbon::now()->addSeconds($seconds)->format('Y-m-d H:i:s.u');
+                $model->created_at = Carbon::now()->format('Y-m-d H:i:s.u');
+                $model->amount = $request->amount;
+                $model->save();
+
+                return $model;
+            }, 3);
+
+            if (!$model) {
+                return ['data' => ['message' => __('locale.trading_not_enough_money')], 'status' => 422];
             }
 
-            $model->symbol_id = $request->symbol;
-            $model->user_id = Auth::user()->id;
-            $model->type = $request->direction;
-            $model->open_price = $price;
-            $model->hedging = $hedge;
-            $model->percent = $symbol->percent;
-            $model->close_at = Carbon::now()->addSeconds($seconds)->format('Y-m-d H:i:s.u');
-            $model->created_at = Carbon::now()->format('Y-m-d H:i:s.u');
-            $model->amount = $request->amount;
-            $model->save();
+            if ($request->type === 'real') {
+                broadcast(new ChangeBalance($balanceOwner->balance, $balanceOwner));
+            } elseif ($request->type === 'demo') {
+                broadcast(new ChangeDemoBalance($balanceOwner->demo_balance, $balanceOwner));
+            } else {
+                broadcast(new ChangeContestBalance($balanceOwner->balance, $balanceOwner, $request->id));
+            }
             $model->expiration = $seconds - 1;
             $model->timestamp = Carbon::parse($model->close_at)->timestamp;
             return ['data' => $model, 'status' => 200];
         } catch (\Throwable $exception) {
-            dd($exception->getMessage());
+            report($exception);
+            return ['data' => ['message' => __('locale.trading_place_error')], 'status' => 500];
         }
     }
 
