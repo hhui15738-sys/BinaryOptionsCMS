@@ -6,7 +6,10 @@ RUN npm ci --ignore-scripts
 COPY webpack.mix.js ./
 COPY resources ./resources
 COPY public ./public
-RUN npm run production
+RUN npm run production \
+    && test -s public/app/app.js \
+    && test -s public/app/admin.js \
+    && grep -q '"/app/admin.js"' public/mix-manifest.json
 
 FROM composer:2.8 AS vendor
 
