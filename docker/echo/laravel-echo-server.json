@@ -1,0 +1,25 @@
+{
+  "authHost": "http://nginx",
+  "authEndpoint": "/broadcasting/auth",
+  "database": "redis",
+  "databaseConfig": {
+    "redis": {
+      "host": "redis",
+      "port": 6379
+    }
+  },
+  "devMode": false,
+  "host": "0.0.0.0",
+  "port": 6001,
+  "protocol": "http",
+  "subscribers": {
+    "http": true,
+    "redis": true
+  },
+  "apiOriginAllow": {
+    "allowCors": true,
+    "allowOrigin": "http://127.0.0.1:8080",
+    "allowMethods": "GET, POST",
+    "allowHeaders": "Origin, Content-Type, X-Auth-Token, X-Requested-With, Accept, Authorization, X-CSRF-TOKEN, X-Socket-Id"
+  }
+}

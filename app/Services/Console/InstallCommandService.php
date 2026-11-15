@@ -5,10 +5,16 @@ namespace App\Services\Console;
 
 use App\Helpers\Helper;
 use App\Models\DepositSystem;
+use App\Models\ExchangeRates;
+use App\Models\Profile;
 use App\Models\Promocode;
+use App\Models\Referral;
+use App\Models\Role;
 use App\Models\Symbols\Options\Symbol;
+use App\User;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Hash;
 
 
 class InstallCommandService {
@@ -17,9 +23,6 @@ class InstallCommandService {
     {
         Helper::checkMysqlConnection();
         Artisan::call('migrate', ['--force' => true]);
-        Symbol::truncate();
-        Promocode::truncate();
-
         $symbols = [
             ['BINANCE:BTC/USDT', 90, 0, 0, 1],
             ['BINANCE:ETH/BTC', 85, 0, 0, 1],
@@ -92,8 +95,10 @@ class InstallCommandService {
             $exploded = explode(':', $symbol[0]);
             list($broker, $pair) = explode(':', $symbol[0]);
             list($firstPair, $secondPair) = explode('/', $pair);
-            $model = new Symbol();
-            $model->symbol = $firstPair.$secondPair;
+            $model = Symbol::firstOrNew([
+                'symbol' => $firstPair.$secondPair,
+                'broker' => $exploded[0],
+            ]);
             $model->first_symbol = $firstPair;
             $model->second_symbol = $secondPair;
             $model->type = 1;
@@ -159,13 +164,10 @@ class InstallCommandService {
     }
     public function migrationsSeedersStarterDeposit()
     {
-        DepositSystem::truncate();
-
         $systems = ['Cards & Qiwi (max. 8 000$)' => 0, 'Cards & YooMoney (max. 200$)' => 0, 'Cryptocurrencies (Bitcoin, Ethereum, Litecoin)(max. 100 000$)' => 0, 'Webmoney' => 1, 'Betatransfer' => 1, 'Payeer' => 1, 'Free-Kassa' => 1, 'InterKassa' => 1, 'RosKassa' => 1, 'Robokassa' => 1];
 
         foreach ($systems as $system => $hidden) {
-            $model = new DepositSystem();
-            $model->text = $system;
+            $model = DepositSystem::firstOrNew(['text' => $system]);
             $model->hidden = $hidden;
             $model->save();
         }
@@ -177,9 +179,49 @@ class InstallCommandService {
     }
     public function migrationsSeedersStarterAll ()
     {
-        $this->migrationsSeedersStarterSymbols();
-        $this->migrationsSeedersStarterPromo();
-        $this->migrationsSeedersStarterDeposit();
+        if (Symbol::count() === 0) {
+            $this->migrationsSeedersStarterSymbols();
+        }
+        if (Promocode::withTrashed()->count() === 0) {
+            $this->migrationsSeedersStarterPromo();
+        }
+        if (DepositSystem::count() === 0) {
+            $this->migrationsSeedersStarterDeposit();
+        }
+
+        ExchangeRates::updateOrCreate(
+            ['symbol' => 'USD'],
+            ['price' => (float) env('DEFAULT_USD_RATE', 0.0125)]
+        );
+
+        $this->createAdministrator();
         dump("Install command worked successfully");
+    }
+
+    private function createAdministrator(): void
+    {
+        $email = env('ADMIN_EMAIL');
+        $password = env('ADMIN_PASSWORD');
+
+        if (!$email || !$password) {
+            return;
+        }
+
+        $user = User::where('email', $email)->first();
+        if (!$user) {
+            $user = new User();
+            $user->name = 'Administrator';
+            $user->email = $email;
+            $user->password = Hash::make($password);
+            $user->email_verified_at = now();
+            $user->save();
+        }
+
+        $profile = Profile::firstOrNew(['user_id' => $user->id]);
+        $profile->name = $profile->name ?: 'Administrator';
+        $profile->save();
+
+        Referral::firstOrCreate(['user_id' => $user->id]);
+        Role::updateOrCreate(['user_id' => $user->id], ['role' => 1]);
     }
 }
