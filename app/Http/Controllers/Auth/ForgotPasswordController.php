@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Rules\RecaptchaRule;
 use Illuminate\Foundation\Auth\SendsPasswordResetEmails;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -31,7 +32,7 @@ class ForgotPasswordController extends Controller
         'email' => 'required|email',
       ];
       if(!config('app.debug')){
-        $array = array_merge($array, ['custom-g-recaptcha-response' => 'recaptcha']);
+        $array = array_merge($array, ['custom-g-recaptcha-response' => [new RecaptchaRule]]);
       }
       $request->validate($array);
     }

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\Role;
 use App\Providers\RouteServiceProvider;
+use App\Rules\RecaptchaRule;
 use Illuminate\Foundation\Auth\AuthenticatesUsers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -46,7 +47,7 @@ class LoginController extends Controller
         'password' => 'required|string',
       ];
       if(!config('app.debug')){
-        $array = array_merge($array, ['custom-g-recaptcha-response' => 'recaptcha']);
+        $array = array_merge($array, ['custom-g-recaptcha-response' => [new RecaptchaRule]]);
       }
       $request->validate($array);
     }

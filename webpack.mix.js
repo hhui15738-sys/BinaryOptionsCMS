@@ -16,7 +16,7 @@ require('dotenv').config();
 const glob = require('glob')
 const path = require('path')
 
-mix.setPublicPath(path.resolve(__dirname, 'public'));
+mix.setPublicPath('public');
 
 /*
  |--------------------------------------------------------------------------
@@ -79,17 +79,6 @@ mix.sass('resources/sass/bootstrap-extended.scss', 'css')
 
 // mix.copy('resources/js/vendors.min.js', 'public/js/vendors.min.js');
 
-mix.then(() => {
-    if (process.env.MIX_CONTENT_DIRECTION === "rtl") {
-        let command = `node ${path.resolve('node_modules/rtlcss/bin/rtlcss.js')} -d -e ".css" ./public/css/ ./public/css/`;
-        exec(command, function (err, stdout, stderr) {
-            if (err !== null) {
-                console.log(err);
-            }
-        });
-        // exec('./node_modules/rtlcss/bin/rtlcss.js -d -e ".css" ./public/css/ ./public/css/');
-    }
-});
 // if (mix.inProduction()) {
 //     mix.version();
 //     mix.webpackConfig({
@@ -102,3 +91,14 @@ mix.then(() => {
 mix.js('resources/assets/js/scripts.js', 'app').vue();
 mix.js('resources/vuejs/app.js', 'app').vue();
 mix.js('resources/vuejs/admin.js', 'app').vue();
+
+mix.then(() => {
+    if (process.env.MIX_CONTENT_DIRECTION === "rtl") {
+        let command = `node ${path.resolve('node_modules/rtlcss/bin/rtlcss.js')} -d -e ".css" ./public/css/ ./public/css/`;
+        exec(command, function (err) {
+            if (err !== null) {
+                console.log(err);
+            }
+        });
+    }
+});

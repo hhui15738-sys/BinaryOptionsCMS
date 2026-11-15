@@ -178,8 +178,10 @@ Route::middleware(['auth', 'cheat'])->group(function () {
       Route::post("contest/updateBalance/{contest_id}/user/{user_id}", 'Admin\ContestController@updateBalance')->where('contest_id', '[0-9]+')->where('user_id', '[0-9]+');
       Route::post("contest/updateBan/{contest_id}/user/{user_id}", 'Admin\ContestController@updateBan')->where('contest_id', '[0-9]+')->where('user_id', '[0-9]+');
     });
-    Route::get('/{uri?}', 'Spa\SpaController@admin')->where('uri', '.*');
+    Route::get('/{uri?}', 'Spa\SpaController@admin')
+      ->where('uri', '(?!.*\\.[^/]+$).*');
   });
 
-  Route::get('/{uri}', 'Spa\SpaController@index')->where('uri', '.*');
+  Route::get('/{uri}', 'Spa\SpaController@index')
+    ->where('uri', '(?!.*\\.[^/]+$).*');
 });

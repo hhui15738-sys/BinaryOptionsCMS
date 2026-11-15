@@ -6,7 +6,9 @@ RUN npm ci --ignore-scripts
 COPY webpack.mix.js ./
 COPY resources ./resources
 COPY public ./public
-RUN npm run production
+RUN npm run production \
+    && test -s public/app/app.js \
+    && test -s public/app/admin.js
 
 FROM composer:2.8 AS vendor
 
@@ -17,7 +19,7 @@ COPY database/factories database/factories
 COPY database/seeds database/seeds
 RUN composer install --no-dev --no-interaction --prefer-dist --no-scripts --optimize-autoloader
 
-FROM php:8.1-fpm-bookworm
+FROM php:8.3-fpm-bookworm
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends curl libonig-dev libpq-dev libzip-dev unzip \

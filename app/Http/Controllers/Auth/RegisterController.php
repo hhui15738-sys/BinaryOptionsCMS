@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Profile;
 use App\Models\Referral;
 use App\Providers\RouteServiceProvider;
+use App\Rules\RecaptchaRule;
 use App\User;
 use Dirape\Token\Token;
 use Illuminate\Foundation\Auth\RegistersUsers;
@@ -64,7 +65,7 @@ class RegisterController extends Controller
         'password' => ['required', 'string', 'min:8', 'confirmed'],
       ];
       if(!config('app.debug')){
-        $array = array_merge($array, ['custom-g-recaptcha-response' => 'recaptcha']);
+        $array = array_merge($array, ['custom-g-recaptcha-response' => [new RecaptchaRule]]);
       }
       return Validator::make($data, $array);
     }

@@ -15,6 +15,7 @@ use App\User;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Database\Eloquent\Model;
 
 
 class InstallCommandService {
@@ -179,22 +180,25 @@ class InstallCommandService {
     }
     public function migrationsSeedersStarterAll ()
     {
-        if (Symbol::count() === 0) {
-            $this->migrationsSeedersStarterSymbols();
-        }
-        if (Promocode::withTrashed()->count() === 0) {
-            $this->migrationsSeedersStarterPromo();
-        }
-        if (DepositSystem::count() === 0) {
-            $this->migrationsSeedersStarterDeposit();
-        }
+        Model::unguarded(function () {
+            if (Symbol::count() === 0) {
+                $this->migrationsSeedersStarterSymbols();
+            }
+            if (Promocode::withTrashed()->count() === 0) {
+                $this->migrationsSeedersStarterPromo();
+            }
+            if (DepositSystem::count() === 0) {
+                $this->migrationsSeedersStarterDeposit();
+            }
 
-        ExchangeRates::updateOrCreate(
-            ['symbol' => 'USD'],
-            ['price' => (float) env('DEFAULT_USD_RATE', 0.0125)]
-        );
+            ExchangeRates::updateOrCreate(
+                ['symbol' => 'USD'],
+                ['price' => (float) env('DEFAULT_USD_RATE', 0.0125)]
+            );
 
-        $this->createAdministrator();
+            $this->createAdministrator();
+        });
+
         dump("Install command worked successfully");
     }
 
